@@ -1,5 +1,14 @@
 # atlas-sync-action
 
+> [!IMPORTANT]
+> ## Deprecation Notice
+> This action has been deprecated in favor of the `ariga/atlas-action/migrate/push` action.
+>
+> Please see [the docs](https://github.com/ariga/atlas-action#arigaatlas-actionmigratepush) for more
+details.
+
+## About
+
 A GitHub Action for syncing a migration directory to [Atlas Cloud](https://atlasgo.cloud).
 
 ## Usage
@@ -26,13 +35,26 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_DATABASE: dev
+          MYSQL_ROOT_PASSWORD: pass
+        options: >-
+          --health-cmd "mysqladmin ping -ppass"
+          --health-interval 10s
+          --health-start-period 10s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v3
       - uses: ariga/atlas-sync-action@v0
-          with:
-            dir: path/to/migrations
-            driver: mysql # or: postgres | sqlite
-            cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
+        with:
+          dir: 'migrations'
+          name: 'app'
+          dev-url: 'mysql://root:pass@mysql:3306/dev'
+          cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
 ```
 
 ## Configuration
@@ -41,14 +63,25 @@ Configure this action with the following inputs:
 
 #### `dir`
 
-**Required** The path to the directory containing your migrations.
+The path to the directory containing your migrations.
 
-#### `driver`
+#### `name` (optional)
 
-**Required** The database driver to use. One of: `mysql`, `postgres`, `sqlite`.
+The name of the migration directory in Atlas Cloud.
+
+#### `tag` (optional)
+
+When continuously syncing your directory, this input can be used to provide a unique identifier for each version. Defaults to the commit SHA.
+
+#### `dev-url`
+
+The URL of the dev database to connect to. Atlas will use this database to check the validity of the SQL files before syncing them to Atlas Cloud.
 
 #### `cloud-token`
 
-**Required** The Atlas Cloud token to use for authentication.
+The Atlas Cloud token to use for authentication. Must be passed as a secret.
 
-The full list of options can be found in the [action.yml](action.yml) file.
+## Next steps
+
+1. [`ariga/atlas-action`](https://github.com/ariga/atlas-action) - A GitHub Action to set up CI for database schema changes.
+2. [`ariga/atlas-deploy-action`](https://github.com/ariga/atlas-deploy-action) - A GitHub Action to deploy schema migrations.
